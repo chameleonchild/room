@@ -14,17 +14,20 @@ def success():
 	form = cgi.FieldStorage()
 	inventory = form.getvalue('inventory')
 
-	if inventory==None:
-		print "you had no inventory! here is 10 gold and 10 manna!"
-		inventory="10,10"
-
-
+	#change occupied value in this room to 1 (full)
+	r = csv.reader(open('resources.csv'))
+	lines = [l for l in r]
+	lines[0][2] = '1'
+	writer = csv.writer(open('resources.csv','w'))
+	writer.writerows(lines)
+	
 	#subtract 1 manna from player
 	invArr = re.findall('\d+',inventory)
 	manna = int(invArr[0])-1
 	gold = int(invArr[1])
 	inventory = "%d,%d" %(manna, gold) 
 	inven = '"%s"' %inventory
+
 	if manna<=0:
 		print "OUT OF MANNA. GAME OVER"
 	else:
@@ -38,7 +41,7 @@ def success():
 			</br>
 			<font>To go to class, type PLAY.</font></br>
 			<form action="http://cs.mcgill.ca/~gadach/cgi-bin/room.cgi" method="post">
-			<input type ="text" name="userInput">
+			<input type ="text" name="input">
 			<input type = "submit" value="Submit"></br>
 			<input type="hidden" name="inventory" value=''',inven,'''> 
 			<font> Other options: DROP, EXIT, REFRESH </font></br>
@@ -64,13 +67,18 @@ def success():
 			</body></html>
 			''',
 
-	
+	#run other room's success.py 
 
 #send user back to other room through REFRESH
 def failure():
-	url = 'https://www.cs.mcgill.ca/~jmesic/roomInteraction.cgi'
-	inventory=getPlayerInventory()
-	values = {'userInput' : 'REFRESH', 'playerInventory' : inventory }
+
+	#send the player back to their room by passing post request with REFRESH
+	url = form.getvalue('URL')
+	values = {'input' : 'REFRESH', 'inventory' : form.getvalue('inventory') }
+	data = urllib.urlencode(values)
+	req = urllib2.Request(url, data)
+	response = urllib2.urlopen(req)
+	the_page = response.read()
 
 
 
@@ -79,20 +87,16 @@ def failure():
 
 with open('resources.csv','r') as csvfile:
 	reader = csv.reader(csvfile)
-	for row in reader:	
+	for row in reader:
 		row = row
-
 
 	if (row[2]=="0"):
 	#if my room occupied value is 0 (empty) then run success() and success.py of other room"""
-
 		success()
-		#run https://cs.mcgill.ca/~scrook1/a4/success.py
-		
+		#url = 'https://cs.mcgill.ca/~scrook1/a4/success.py'
+		#values = {'inventory' : 'inventory')
 	else:
 	#if room occupied value is 1 (full) then run room.c of other room using refresh input"""
-		print "failed!"
-		#run scrook1/room.c refresh input"""
+		failure()
 
 csvfile.close()
-
